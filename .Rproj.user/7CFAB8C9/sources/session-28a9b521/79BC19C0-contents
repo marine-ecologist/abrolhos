@@ -1,0 +1,32 @@
+library(terra)
+
+# ---- NOAA Coral Reef Watch DHW palette (faithful reproduction, 0–20 °C-weeks) ----
+# Anchored on CRW thresholds: watch/warning (purple) below 4, then the
+# yellow->orange->red->black bleaching ramp. Colour at value v:
+crw_anchors <- data.frame(
+  value = c(0,    0.001,  1,      2,      4,      4.001,  8,      12,     16,     20),
+  col   = c("#FFFFFF","#EFE7F2","#9E7BB5","#5C3F8C","#2E2E8B",
+            "#FFF200","#FF8C00","#FF0000","#8B0000","#000000")
+)
+
+# Build a 256-colour ramp that honours those value positions
+crw_dhw_pal <- function(n = 256, vmax = 20) {
+  pos <- crw_anchors$value / vmax
+  ramp <- colorRamp(crw_anchors$col)          # interpolates in RGB
+  rgb(ramp(seq(0, 1, length.out = n)), maxColorValue = 255)
+}
+
+# ---- Data: seasonal peak DHW per pixel ----
+dhw11 <- max(rast("CRW_DHW_2011_monthly_max.tif"))
+dhw25 <- max(rast("CRW_DHW_2025_monthly_max.tif"))
+
+# Option A — TRUE CRW scale (cap at 20; everything >=20 is black, as NOAA shows it)
+dhw11_c <- clamp(dhw11, 0, 20, values = TRUE)
+plot(dhw11_c, col = crw_dhw_pal(256, 20), range = c(0, 20),
+     main = "2011 peak DHW", plg = list(title = "°C-weeks"))
+points(113.78, -28.75, pch = 8, col = "green", cex = 1.5)
+
+# Option B — keep CRW colours but stretch to the data max (preserves >20 detail)
+vmax <- ceiling(max(global(c(dhw11, dhw25), "max", na.rm = TRUE)$max))  # ~42
+plot(dhw11, col = crw_dhw_pal(256, vmax), range = c(0, vmax),
+     main = "2011 peak DHW (stretched)", plg = list(title = "°C-weeks"))

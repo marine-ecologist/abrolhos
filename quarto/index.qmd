@@ -1,0 +1,105 @@
+---
+title: "Western Australia marine heatwaves: 2011 vs 2025"
+format:
+  html:
+    embed-resources: true
+    code-fold: false
+    code-tools: false
+    toc: true
+    toc-depth: 3
+editor: visual
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+library(terra)
+library(ggplot2)
+library(patchwork)
+
+
+
+
+CRW_DHW_2011 <- rast("~/abrolhos/data/CRW_DHW_2011.tif") |> max()
+CRW_DHW_2025 <- rast("~/abrolhos/data/CRW_DHW_2025.tif") |> max()
+CRW_DHW <- c(CRW_DHW_2011, CRW_DHW_2025)
+names(CRW_DHW) <- c("max NOAA_DHW\n 2011", "max NOAA_DHW \n 2025")
+units(CRW_DHW) <- c("max DHW", "max DHW")
+CRW_DHW_delta <- CRW_DHW_2025-CRW_DHW_2011
+names(CRW_DHW_delta) <- "Δ NOAA_DHW \n2025-2011"
+WAcoastline <- rnaturalearth::ne_countries(country="Australia", scale="large") |> vect() |> crop(CRW_DHW_delta)
+abrovect_ext <- ext(c(113.4, 114.2, -29.2, -28.1))
+abrovect <- vect("/Users/rof011/abrolhos/allen/Abrolhos-20260529190655/Geomorphic-Map/geomorphic.geojson")
+abrovect_poly <- as.polygons(abrovect_ext, crs = "EPSG:4326")
+
+
+
+a <- ggplot() + theme_bw() +
+  tidyterra::geom_spatraster(data=CRW_DHW, show.legend=TRUE) + 
+  tidyterra::geom_spatvector(data=WAcoastline) +
+  tidyterra::geom_spatvector(data=abrovect_poly, linewidth=0.3, color="darkred", fill=NA) +
+  facet_wrap(~lyr) +
+  #scale_fill_distiller(palette="OrRd", name = "maxDHW", direction=1, limits=c(0,42))# +
+  cmocean::scale_fill_cmocean(name = "thermal", scale_name="maxDHW", limits=c(0,42)) +
+  labs(fill = "maxDHW")
+
+
+b <- ggplot() + theme_bw() +
+  facet_wrap(~lyr) +
+  tidyterra::geom_spatraster(data=CRW_DHW_delta) + 
+  tidyterra::geom_spatvector(data=WAcoastline) +
+  tidyterra::geom_spatvector(data=abrovect_poly, linewidth=0.3, color="darkred", fill=NA) +
+  #scale_fill_distiller(palette="RdBu", name = "Δ maxDHW", limits=c(-25,25))# +
+  cmocean::scale_fill_cmocean(name = "balance", limits=c(-25, 25)) +
+  labs(fill = "Δ maxDHW")
+# 
+# a1 <- ggplot() + theme_bw() +
+#   tidyterra::geom_spatraster(data=CRW_DHW |> crop(abrovect_ext), show.legend=TRUE) + 
+#   tidyterra::geom_spatvector(data=abrovect, linewidth = 0.01, colour = "black", fill = "beige") +
+#   facet_wrap(~lyr) +
+#   #scale_fill_distiller(palette="Reds",  direction=-1, limits=c(0,42)) 
+#   cmocean::scale_fill_cmocean(name = "thermal", limits=c(0,42)) 
+# 
+# 
+# b1 <- ggplot() + theme_bw() +
+#   facet_wrap(~lyr) +
+#   tidyterra::geom_spatraster(data=CRW_DHW_delta |> crop(abrovect_ext), show.legend=TRUE) + 
+#   tidyterra::geom_spatvector(data=abrovect, linewidth = 0.01, colour = "black", fill = "beige") +
+#   cmocean::scale_fill_cmocean(name = "balance", limits=c(-25, 25))
+# 
+
+
+regionalplot <- wrap_plots(
+  a + theme(legend.position = "left"),
+  b + theme(legend.position = "right"),
+  ncol = 2,
+  widths = c(1, 0.55)
+)
+
+regionalplot
+# 
+# localplot <- wrap_plots(
+#   a1 + theme(legend.position = "none"),
+#   b1 + theme(legend.position = "none"),
+#   ncol = 2,
+#   heights = c(1, 1)
+# )
+# 
+# finalplot <- wrap_plots(
+#   regionalplot,
+#   localplot,
+#   ncol = 1#,
+#   #heights = c(1, 1)
+# )
+# 
+# finalplot
+
+```

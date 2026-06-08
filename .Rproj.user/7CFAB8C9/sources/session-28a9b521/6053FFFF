@@ -1,0 +1,31 @@
+{
+    "id": "6053FFFF",
+    "path": "~/abrolhos/quarto/abrolhos.qmd",
+    "project_path": "quarto/abrolhos.qmd",
+    "type": "quarto_markdown",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1780893780791.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "rmdVisualMode": "true",
+        "rmdVisualWrapConfigured": "true",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "0,0",
+        "scrollLine": "1008",
+        "rmdVisualCollapsedChunks": "",
+        "docOutlineVisible": "1",
+        "rmdVisualModeLocation": "251:0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1780902391,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1780902396882,
+    "read_only": false,
+    "read_only_alternatives": []
+}

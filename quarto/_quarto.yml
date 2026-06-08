@@ -1,0 +1,34 @@
+project:
+  type: website
+  output-dir: ../docs
+
+website:
+  title: "WA marine heatwaves"
+  page-navigation: true
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: abrolhos.qmd
+        text: Houtman Abrolhos
+    right:
+      - icon: github
+        href: https://github.com/marine-ecologist/abrolhos
+        
+format:
+  html:
+    theme: darkly
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    page-layout: full
+    embed-resources: true
+    respect-user-color-scheme: false
+
+execute:
+  echo: false
+  warning: false
+  message: false
+  freeze: auto
+
+editor: visual

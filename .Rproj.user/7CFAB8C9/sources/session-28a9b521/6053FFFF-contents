@@ -1,0 +1,1046 @@
+---
+title: "Capes Current–mediated cooling of the Houtman Abrolhos during the 2025 Western Australian marine heatwave"
+format:
+  html:
+    embed-resources: true
+    code-fold: false
+    code-tools: false
+    toc: true
+    toc-depth: 2
+editor: visual
+execute:
+  echo: false
+  warning: false
+  message: false
+  cache: true
+---
+
+```{r}
+
+library(tidyverse)
+library(ggplot2)
+library(terra)
+library(tidyterra)
+library(sf)
+library(grid)
+library(patchwork)
+
+set_time_from_yyyymmdd_names <- function(r) {
+  dates <- names(r) |>
+    str_extract("\\d{8}") |>
+    as.Date(format = "%Y%m%d")
+  time(r) <- dates
+  r
+}
+
+set_time_from_yyyymmdd_names2 <- function(r, rename_layers = TRUE) {
+  
+  dates <- names(r) |>
+    stringr::str_remove("^sst_") |>
+    stringr::str_extract("\\d{8}") |>
+    as.Date(format = "%Y%m%d")
+  
+  if (length(dates) != terra::nlyr(r)) {
+    stop("Number of extracted dates does not match number of raster layers.")
+  }
+  
+  if (any(is.na(dates))) {
+    stop("Some layer names did not contain valid YYYYMMDD dates.")
+  }
+  
+  terra::time(r) <- dates
+  
+  if (rename_layers) {
+    names(r) <- format(dates, "%Y%m%d")
+  }
+  
+  r
+}
+
+
+
+tidy_monthly <- function(x, metric="mean"){
+  dates <- as.Date(time(x))
+  xx <- terra::tapp(
+    x,
+    index = floor_date(dates, "month"),
+    fun = metric,
+    na.rm = TRUE
+  )
+  names(xx) <- floor_date(dates, "month") |>
+    unique() |>
+    format("%Y-%m")
+  
+  xx
+
+}
+
+dateconvertpipe <- function(x){
+  x |>
+  (\(r) {
+    time(r) <- as.Date(time(r))
+    r
+  })()
+}
+
+# noaa dhw
+CRW_SST_2011 <- rast("~/abrolhos/data/CRW_SST_2011.tif") |> dateconvertpipe() |> project("EPSG:4326")
+CRW_SST_2025 <- rast("~/abrolhos/data/CRW_SST_2025.tif") |> dateconvertpipe() |> project("EPSG:4326")
+CRW_DHW_2011 <- rast("~/abrolhos/data/CRW_DHW_2011.tif") |> dateconvertpipe() |> project("EPSG:4326")
+CRW_DHW_2025 <- rast("~/abrolhos/data/CRW_DHW_2025.tif") |> dateconvertpipe() |> project("EPSG:4326")
+
+# IMOS sst
+
+imos_sst_2011 <- rast("~/abrolhos/data/imos_sst_2011.tif") |> set_time_from_yyyymmdd_names2() |> project("EPSG:4326")
+imos_sst_2025 <- rast("~/abrolhos/data/imos_sst_2025.tif") |> set_time_from_yyyymmdd_names2() |> project("EPSG:4326")
+
+IMOS_dhw_2011 <- rast("/Users/rof011/abrolhos/data/IMOS_dhw_WA_2010_2011.tif") |> set_time_from_yyyymmdd_names2() |> project("EPSG:4326")
+IMOS_dhw_2025 <- rast("/Users/rof011/abrolhos/data/IMOS_dhw_WA_2024_2025.tif") |> set_time_from_yyyymmdd_names2() |> project("EPSG:4326")
+
+# MODIS chl
+chl_2010_2011 <- rast("~/abrolhos/copernicus_chl/globcolour_CHL_WA_2010_2011.nc") |> dateconvertpipe() |> project("EPSG:4326")
+chl_2024_2025 <- rast("~/abrolhos/copernicus_chl/globcolour_CHL_WA_2024_2025.nc") |> dateconvertpipe() |> project("EPSG:4326")
+
+# copernicus sea level
+sla_2011 <- rast("~/abrolhos/copernicus_sealevel/sea_level_WA_2010_2011.nc", subds = "sla") |> dateconvertpipe() |> project("EPSG:4326")
+sla_2025 <- rast("~/abrolhos/copernicus_sealevel/sea_level_WA_2024_2025.nc", subds = "sla") |> dateconvertpipe() |> project("EPSG:4326")
+
+
+
+# cmems currents
+
+
+cmems_2011_dir <- rast("~/abrolhos/cmems/derived/cmems_WA_2010_2011_surface_current_bearing_deg.tif") |> dateconvertpipe() |> project("EPSG:4326")
+cmems_2025_dir <- rast("~/abrolhos/cmems/derived/cmems_WA_2024_2025_surface_current_bearing_deg.tif") |> dateconvertpipe() |> project("EPSG:4326")
+cmems_2011_speed <- rast("~/abrolhos/cmems/derived/cmems_WA_2010_2011_surface_current_speed.tif") |> dateconvertpipe() |> project("EPSG:4326")
+cmems_2025_speed <- rast("~/abrolhos/cmems/derived/cmems_WA_2024_2025_surface_current_speed.tif") |> dateconvertpipe() |> project("EPSG:4326")
+
+# cmems sea water potential temperature (°C)
+cmems_2011_thetao <- rast("~/abrolhos/cmems/cmems_WA_2010_2011.nc", subds = "thetao") |> dateconvertpipe() |> project("EPSG:4326")
+cmems_2025_thetao <- rast("~/abrolhos/cmems/cmems_WA_2024_2025.nc", subds = "thetao") |> dateconvertpipe() |> project("EPSG:4326")
+
+# cmems ocean mixed layer thickness (m)
+cmems_2011_mlotst <- rast("~/abrolhos/cmems/cmems_WA_2010_2011.nc", subds = "mlotst") |> dateconvertpipe() |> project("EPSG:4326")
+cmems_2025_mlotst <- rast("~/abrolhos/cmems/cmems_WA_2024_2025.nc", subds = "mlotst") |> dateconvertpipe() |> project("EPSG:4326")
+
+ 
+# ERA5 heatflux (Daily)
+ERA5_heatflux_2011 <- rast("~/abrolhos/ERA5_heatflux/processed/surface_latent_heat_flux_0_daily-mean_daily_2010_2011.tif") |> project("EPSG:4326")
+ERA5_heatflux_2025 <- rast("~/abrolhos/ERA5_heatflux/processed/surface_latent_heat_flux_0_daily-mean_daily_2024_2025.tif") |> project("EPSG:4326")
+                                  
+ERA5_net_solar_2011 <- rast("~/abrolhos/ERA5_heatflux/processed/surface_net_solar_radiation_stream-oper_daily-mean_daily_2010_2011.tif") |> project("EPSG:4326")
+ERA5_net_solar_2025 <- rast("~/abrolhos/ERA5_heatflux/processed/surface_net_solar_radiation_stream-oper_daily-mean_daily_2024_2025.tif") |> project("EPSG:4326")
+
+ERA5_thermalradiation_2011 <- rast("~/abrolhos/ERA5_heatflux/processed/surface_net_thermal_radiation_0_daily-mean_daily_2010_2011.tif") |> project("EPSG:4326")
+ERA5_thermalradiation_2025 <- rast("~/abrolhos/ERA5_heatflux/processed/surface_net_thermal_radiation_0_daily-mean_daily_2024_2025.tif") |> project("EPSG:4326")
+
+ERA5_sensibleflux_2011 <- rast("~/abrolhos/ERA5_heatflux/processed/surface_sensible_heat_flux_0_daily-mean_daily_2010_2011.tif") |> project("EPSG:4326")
+ERA5_sensibleflux_2025 <- rast("~/abrolhos/ERA5_heatflux/processed/surface_sensible_heat_flux_0_daily-mean_daily_2024_2025.tif") |> project("EPSG:4326")
+
+
+# BARRA wind
+library(terra)
+library(stringr)
+library(dplyr)
+
+u10_daily_2010_2011 <- rast("/Users/rof011/abrolhos/BARRA_R2_winds/u10_daily_2010_2011.tif") |> set_time_from_yyyymmdd_names() |> project("EPSG:4326")
+
+v10_daily_2010_2011 <- rast("/Users/rof011/abrolhos/BARRA_R2_winds/v10_daily_2010_2011.tif") |> set_time_from_yyyymmdd_names() |> project("EPSG:4326")
+
+ws10_daily_2010_2011 <- rast("/Users/rof011/abrolhos/BARRA_R2_winds/ws10_daily_2010_2011.tif") |> set_time_from_yyyymmdd_names() |> project("EPSG:4326")
+
+u10_daily_2024_2025 <- rast("/Users/rof011/abrolhos/BARRA_R2_winds/u10_daily_2024_2025.tif") |> set_time_from_yyyymmdd_names() |> project("EPSG:4326")
+v10_daily_2024_2025 <- rast("/Users/rof011/abrolhos/BARRA_R2_winds/v10_daily_2024_2025.tif") |> set_time_from_yyyymmdd_names() |> project("EPSG:4326")
+ws10_daily_2024_2025 <- rast("/Users/rof011/abrolhos/BARRA_R2_winds/ws10_daily_2024_2025.tif") |> set_time_from_yyyymmdd_names() |> project("EPSG:4326")
+
+
+
+auscoastline <- rnaturalearth::ne_countries(country="Australia", scale="large") |> vect()
+
+abrovect <- vect("/Users/rof011/abrolhos/allen/Abrolhos-20260529190655/Geomorphic-Map/geomorphic.geojson")
+abrovect_ext <- ext(c(113.4, 114.2, -29.2, -28.1))
+
+
+auscoastline <- rnaturalearth::ne_countries(country = "Australia", scale = "large") |>
+  vect()
+
+abrovect <- vect("/Users/rof011/abrolhos/allen/Abrolhos-20260529190655/Geomorphic-Map/geomorphic.geojson")
+
+abrovect_ext <- ext(c(113.4, 114.2, -29.2, -28.1))
+abrovect_poly <- as.polygons(abrovect_ext, crs = "EPSG:4326")
+
+months_use <- c("2025-01", "2025-02", "2025-03", "2025-04", "2025-05")
+
+make_delta_maps_split <- function(
+    delta_r,
+    plot_name,
+    fill_palette = "RdBu",
+    fill_name = "Δ",
+    title = NULL,
+    subtitle = NULL,
+    direction = 1,
+    width = 11,
+    height = 8
+) {
+
+  delta_m <- delta_r |>
+    terra::subset(months_use)
+
+  p_full <- ggplot() +
+    theme_bw() +
+    geom_spatraster(data = delta_m) +
+    geom_spatvector(
+      data = auscoastline |> crop(ext(delta_m)),
+      fill = "beige"
+    ) +
+    geom_spatvector(
+      data = abrovect_poly,
+      linewidth = 0.2,
+      colour = "red",
+      fill = NA
+    ) +
+    facet_wrap(~lyr, nrow = 1) +
+    scale_fill_distiller(
+      palette = fill_palette,
+      name = fill_name,
+      direction = direction
+    ) +
+    labs(
+      title = title,
+      subtitle = subtitle
+    ) +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 6),
+      axis.text.y = element_text(size = 6)
+    )
+
+  delta_a <- crop(delta_r, abrovect_ext) |>
+    terra::subset(months_use)
+
+  p_abrolhos <- ggplot() +
+    theme_bw() +
+    geom_spatraster(data = delta_a) +
+    geom_spatvector(
+      data = abrovect,
+      linewidth = 0.01,
+      colour = "black",
+      fill = "beige"
+    ) +
+    facet_wrap(~lyr, nrow = 1) +
+    scale_fill_distiller(
+      palette = fill_palette,
+      name = fill_name,
+      direction = direction
+    ) +
+    labs(
+      title = title,
+      subtitle = subtitle
+    ) +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 6),
+      axis.text.y = element_text(size = 6)
+    )
+
+  p_combined <- p_full / p_abrolhos +
+    plot_layout(
+      heights = c(1, 1),
+      guides = "collect"
+    ) &
+    theme(
+      legend.position = "right"
+    )
+
+  ggsave(
+    filename = paste0("~/abrolhos/plots/", plot_name, ".png"),
+    plot = p_full,
+    width = 11,
+    height = 5
+  )
+
+  ggsave(
+    filename = paste0("~/abrolhos/plots/", plot_name, "_combined.png"),
+    plot = p_combined,
+    width = width,
+    height = height
+  )
+
+  list(
+    full = p_full,
+    abrolhos = p_abrolhos,
+    combined = p_combined
+  )
+}
+
+make_delta_maps <- function(
+    delta_r,
+    plot_name,
+    fill_palette = "RdBu",
+    fill_name = "Δ",
+    title = NULL,
+    subtitle = NULL,
+    direction = 1,
+    width = 11,
+    height = 8
+) {
+
+  delta_m <- delta_r |>
+    terra::subset(months_use)
+
+  delta_fill_range <- range(
+    terra::values(delta_m),
+    na.rm = TRUE,
+    finite = TRUE
+  )
+
+  p_full <- ggplot() +
+    theme_bw() +
+    geom_spatraster(data = delta_m) +
+    geom_spatvector(
+      data = auscoastline |> crop(ext(delta_m)),
+      fill = "beige"
+    ) +
+    geom_spatvector(
+      data = abrovect_poly,
+      linewidth = 0.2,
+      colour = "red",
+      fill = NA
+    ) +
+    facet_wrap(~lyr, nrow = 1) +
+    scale_fill_distiller(
+      palette = fill_palette,
+      name = fill_name,
+      direction = direction,
+      limits = delta_fill_range,
+      oob = scales::squish
+    ) +
+    labs(
+      title = title,
+      subtitle = subtitle
+    ) +
+    theme(
+      legend.position = "none",
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 6),
+      axis.text.y = element_text(size = 6)
+    )
+
+  delta_a <- crop(delta_r, abrovect_ext) |>
+    terra::subset(months_use)
+
+  p_abrolhos <- ggplot() +
+    theme_bw() +
+    geom_spatraster(data = delta_a) +
+    geom_spatvector(
+      data = abrovect,
+      linewidth = 0.01,
+      colour = "black",
+      fill = "beige"
+    ) +
+    facet_wrap(~lyr, nrow = 1) +
+    scale_fill_distiller(
+      palette = fill_palette,
+      name = fill_name,
+      direction = direction,
+      limits = delta_fill_range,
+      oob = scales::squish
+    ) +
+    labs(
+      title = title,
+      subtitle = subtitle
+    ) +
+    theme(
+      legend.position = "right",
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 6),
+      axis.text.y = element_text(size = 6)
+    )
+
+  p_combined <- p_full / p_abrolhos +
+    plot_layout(
+      heights = c(1, 1)
+    )
+
+  ggsave(
+    filename = paste0("~/abrolhos/plots/", plot_name, ".png"),
+    plot = p_full,
+    width = 11,
+    height = 5
+  )
+
+  ggsave(
+    filename = paste0("~/abrolhos/plots/", plot_name, "_combined.png"),
+    plot = p_combined,
+    width = width,
+    height = height
+  )
+
+  list(
+    full = p_full,
+    abrolhos = p_abrolhos,
+    combined = p_combined,
+    fill_range = delta_fill_range
+  )
+}
+
+```
+
+# Summary
+
+The 2025 Western Australian marine heatwave produced severe regional thermal stress, but accumulated heat exposure at the Houtman Abrolhos was substantially lower than during the 2011 event. We compared January–May anomalies in DHW, SST, CMEMS ocean temperature, mixed-layer depth, currents, chlorophyll, sea level, wind, and ERA5 surface heat-flux terms between 2025 and 2011 to identify the mechanisms underlying this local difference. The 2011 event is consistent with a Leeuwin Current-dominated heatwave, where enhanced poleward advection of warm tropical water produced persistent SST anomalies and high DHW. In contrast, the 2025 fields show a more spatially heterogeneous event around the Abrolhos, with reduced local DHW, cooler or mixed thetao, elevated chlorophyll, altered current structure, variable mixed-layer depth, and wind patterns consistent with enhanced mixing and upwelling-favourable shelf forcing. Together, these patterns support a stronger relative role of the Capes Current in 2025, with northward cool-shelf transport and associated upwelling or shelf exchange interrupting heat accumulation around the islands. Atmospheric forcing likely contributed through wind stress and turbulent exchange, but the dominant proximate mechanism appears oceanic: reduced persistence of Leeuwin Current heat delivery and increased local ventilation by Capes Current/upwelling processes. These results suggest that the Abrolhos response to regional heatwaves depends strongly on the dynamic balance between warm Leeuwin Current advection and cooler Capes Current–shelf-water influence, with the latter likely moderating 2025 heat stress.
+
+# 2025 vs 2011 marine heatwave:
+
+-   maxSST in the Abrolhos in 2025 showed an inverted pattern to the 2011 event, with **\~2 degrees lower maxSST in the peak Feb-March months in 2025 than 2011** , yet 2 degrees warmer in the leadup in Jan, and post-peak in April-May.
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-height: 9.5
+#| fig-width: 11
+
+
+
+sst_delta <- CRW_SST_2025 |>
+  tidy_monthly("max") -
+  CRW_SST_2011 |>
+  tidy_monthly("max")
+
+sst_plots <- make_delta_maps(
+  delta_r = sst_delta,
+  plot_name = "p_sst_delta",
+  direction = -1,
+  fill_palette = "RdBu",
+  fill_name = "Δ SST",
+  title = "Δ max monthly SST values (2025-2011)"
+)
+
+sst_plots$combined
+
+
+
+```
+
+-   heat accumulation (DHW) started early in Jan-Feb in 2025 vs 2011, yet the lower SST peak resulted in **\~10 DHW less in the 2025 event than the 2011 event** from March-May
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-height: 9.5
+#| fig-width: 11
+
+dhw_delta <- CRW_DHW_2025 |>
+  tidy_monthly("max") -
+  CRW_DHW_2011 |>
+  tidy_monthly("max")
+
+dhw_plots <- make_delta_maps(
+  delta_r = dhw_delta,
+  plot_name = "p_dhw_delta",
+  fill_palette = "RdBu",
+  direction = -1,
+  fill_name = "Δ NOAA_DHW",
+  title = "Δ max monthly NOAA_DHW values (2025-2011)"
+)
+
+dhw_plots$combined
+
+```
+
+-   modelled heat accumulation (CMEMS thetao) showed no persistent subsurface warmth at the Abrolhos in 2025, which supports the interpretation that the lower DHW in 2025 was not just a satellite surface artefact; the local water column appears to have been cooler or more ventilated than in 2011 for key months.
+
+-   DHW depends on persistence of heat accumulation. Even if SST was high during short windows, the thetao fields suggest that the **Abrolhos had access to cooler subsurface or shelf water in 2025** , indicating an oceanic-process explanation. If the lower 2025 DHW were purely atmospheric, surface cooling may occur but not necessarily a matching subsurface/ocean-temperature signal.
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-height: 9.5
+#| fig-width: 11
+
+
+cmems_2011_thetao_delta <- cmems_2025_thetao |>
+  tidy_monthly("mean") -
+  cmems_2011_thetao |>
+  tidy_monthly("mean")
+
+cmems_thetao_plots <- make_delta_maps(
+  delta_r = cmems_2011_thetao_delta,
+  plot_name = "p_cmems_2011_thetao_delta",
+  fill_palette = "RdBu",
+  fill_name = "Δ thetao",
+  title = "Δ CMEMS thetao (2025-2011)",
+  subtitle = "Modelled ocean temperature adjusted to remove the effect of pressure"
+)
+
+cmems_thetao_plots$combined
+
+```
+
+## Ocean advection
+
+-   **2011 event was strongly linked to enhanced Leeuwin Current transport** during La Niña with high coastal sea level and warm tropical water advected southward due to anomalously strong Leeuwin Current flow and warm-water transport along the WA coastline.
+
+-   **2025 event shows reduced Leeuwin Current transport** Feb-March compared with 2011, with lower coastal sea level and reduced southwards advection of warm tropical water transport along the WA coastline.
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-height: 9.5
+#| fig-width: 11
+
+cmems_dir_delta <- cmems_2025_dir |>
+  tidy_monthly("mean") -
+  cmems_2011_dir |>
+  tidy_monthly("mean")
+
+cmems_sp_delta <- cmems_2025_speed |>
+  tidy_monthly("mean") -
+  cmems_2011_speed |>
+  tidy_monthly("mean")
+
+dir_r <- cmems_dir_delta |>
+  terra::subset(months_use)
+
+sp_r <- cmems_sp_delta |>
+  terra::subset(months_use)
+
+names(dir_r) <- months_use
+names(sp_r) <- months_use
+
+arrow_df <- as.data.frame(dir_r, xy = TRUE, cells = TRUE, na.rm = TRUE) |>
+  pivot_longer(
+    cols = -c(cell, x, y),
+    names_to = "lyr",
+    values_to = "dir"
+  ) |>
+  mutate(
+    row = terra::rowFromCell(dir_r[[1]], cell),
+    col = terra::colFromCell(dir_r[[1]], cell)
+  ) |>
+  filter(
+    row %% 4 == 0,
+    col %% 4 == 0
+  ) |>
+  mutate(
+    dir_rad = dir * pi / 180,
+    arrow_len = 0.18,
+    xend = x + arrow_len * sin(dir_rad),
+    yend = y + arrow_len * cos(dir_rad)
+  )
+
+sp_r_a <- crop(sp_r, abrovect_ext)
+dir_r_a <- crop(dir_r, abrovect_ext)
+
+arrow_df_a <- as.data.frame(dir_r_a, xy = TRUE, cells = TRUE, na.rm = TRUE) |>
+  pivot_longer(
+    cols = -c(cell, x, y),
+    names_to = "lyr",
+    values_to = "dir"
+  ) |>
+  mutate(
+    row = terra::rowFromCell(dir_r_a[[1]], cell),
+    col = terra::colFromCell(dir_r_a[[1]], cell)
+  ) |>
+  filter(
+    row %% 1 == 0,
+    col %% 1 == 0
+  ) |>
+  mutate(
+    dir_rad = dir * pi / 180,
+    arrow_len = 0.025,
+    xend = x + arrow_len * sin(dir_rad),
+    yend = y + arrow_len * cos(dir_rad)
+  )
+
+p_cmems_current <- ggplot() +
+  theme_bw() +
+  geom_spatraster(data = sp_r) +
+  geom_segment(
+    data = arrow_df,
+    aes(
+      x = x,
+      y = y,
+      xend = xend,
+      yend = yend
+    ),
+    arrow = arrow(length = unit(0.08, "cm")),
+    linewidth = 0.25
+  ) +
+  geom_spatvector(
+    data = abrovect_poly,
+    linewidth = 0.2,
+    colour = "red",
+    fill = NA
+  ) +
+  facet_wrap(~lyr, nrow = 1) +
+  scale_fill_distiller(
+    palette = "RdBu",
+    name = expression(Delta ~ "Δ current speed"),
+    direction = -1
+  ) +
+  coord_sf(expand = FALSE) +
+  labs(
+    title = "Δ mean current speed and direction CMEMS (2025-2011)",
+    x = NULL,
+    y = NULL
+  ) +
+  theme(
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(face = "bold"),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 6),
+    axis.text.y = element_text(size = 6)
+  )
+
+p_cmems_current_a <- ggplot() +
+  theme_bw() +
+  geom_spatraster(data = sp_r_a) +
+  geom_segment(
+    data = arrow_df_a,
+    aes(
+      x = x,
+      y = y,
+      xend = xend,
+      yend = yend
+    ),
+    arrow = arrow(length = unit(0.05, "cm")),
+    linewidth = 0.18
+  ) +
+  geom_spatvector(
+    data = abrovect,
+    linewidth = 0.01,
+    colour = "black",
+    fill = "beige"
+  ) +
+  facet_wrap(~lyr, nrow = 1) +
+  scale_fill_distiller(
+    palette = "RdBu",
+    name = expression(Delta ~ "Δ current speed"),
+    direction = -1
+  ) +
+  coord_sf(expand = FALSE) +
+  labs(
+    title = "Δ mean current speed and direction CMEMS (2025-2011)",
+    x = NULL,
+    y = NULL
+  ) +
+  theme(
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(face = "bold"),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 6),
+    axis.text.y = element_text(size = 6)
+  )
+p_cmems_current / p_cmems_current_a +
+  plot_layout(
+    heights = c(1, 1),
+    guides = "collect"
+  ) &
+  theme(
+    legend.position = "bottom"
+  )
+
+```
+
+-   The **Capes Current** is a cool, northward inner-shelf current that develops mainly in summer under southerly wind stress. It carries cooler, more productive upwelled water northward from the Cape Leeuwin–Cape Naturaliste region along the southwest WA shelf, opposing or undercutting the poleward Leeuwin Current influence. [Woo and Pattiaratchi](https://imos.org.au/wp-content/uploads/2024/07/Woo___Pattiaratchi_2010.pdf?utm_source=chatgpt.com) describe it as a wind-forced summer current carrying high-productivity upwelled water equatorward along the southwest coast
+
+-   The Abrolhos 2025–2011 signal is consistent with stronger Capes/upwelling/shelf-current influence in 2025, especially relative to the 2011 Leeuwin Current heatwave.
+
+-   The 2025–2011 differences around the Abrolhos are spatially structured rather than basin-uniform. Local differences in vectors around the Abrolhos suggest altered shelf exchange and reduced dominance of southward Leeuwin advection.
+
+## Atmospheric heat fluxes
+
+-   In 2011, unusually high air-sea heat gain (exceeding 50 W m⁻²) warmed the upper ocean, devastating local marine ecosystems.
+
+-   Differences in surface latent heat flux and net solar radiation (ERA5) do not give a clean explanation for lower Abrolhos DHW in 2011. Atmospheric fields act as modulators of marine heatwaves, while **ocean fields are the proximate driver of differences between the 2025 and 2011 heatwaves** in the Abrolhos.
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-height: 9.5
+#| fig-width: 11
+
+
+ERA5_heatflux_delta <- ERA5_heatflux_2025 |>
+  tidy_monthly("mean") -
+  ERA5_heatflux_2011 |>
+  tidy_monthly("mean")
+
+ERA5_heatflux_plots <- make_delta_maps(
+  delta_r = ERA5_heatflux_delta,
+  plot_name = "p_ERA5_heatflux_delta",
+  fill_palette = "RdBu",
+  fill_name = "Δ latent heatflux",
+  title = "Δ mean monthly ERA5 surface latent heatflux (2025-2011)",
+  subtitle = "Heat loss/gain from evaporation"
+)
+
+ERA5_heatflux_plots$combined
+
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-height: 9.5
+#| fig-width: 11
+
+
+ERA5_net_solar_delta <- ERA5_net_solar_2025 |>
+  tidy_monthly("mean") -
+  ERA5_net_solar_2011 |>
+  tidy_monthly("mean")
+
+ERA5_net_solar_plots <- make_delta_maps(
+  delta_r = ERA5_net_solar_delta,
+  plot_name = "p_ERA5_net_solar_delta",
+  fill_palette = "RdBu",
+  fill_name = "Δ net solar",
+  title = "Δ mean monthly ERA5 surface net solar radiation (2025-2011)",
+  subtitle = "Shortwave sunlight absorbed at the surface"
+)
+
+ERA5_net_solar_plots$combined
+
+```
+
+## Coastal upwelling
+
+-   2025 is locally more chlorophyll-rich than 2011 in several months, which fits a c **ooler, nutrient-enriched shelf-water signal** , not just reduced atmospheric heating.
+
+-   Chlorophyll increase points toward nutrient supply and cool water, which is more naturally linked to upwelling, shelf mixing, eddy-shelf exchange, or **Capes Current transport** .
+
+-   Note differences in Δ Chl on the regional/local plots below as regional Chl includes coastal sources (large magnitude) and more minor localised upwelling
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-height: 9.5
+#| fig-width: 11
+
+
+chl_delta <- chl_2024_2025 |>
+  tidy_monthly("mean") -
+  chl_2010_2011 |>
+  tidy_monthly("mean")
+
+chl_plots <- make_delta_maps_split(
+  delta_r = chl_delta,
+  plot_name = "p_chl_delta",
+  fill_palette = "BrBG",
+  fill_name = "Δ Chl",
+  title = "Δ mean monthly Copernicus chlorophyll values (2025-2011)"
+)
+
+
+chl_plots$combined
+
+```
+
+## Mixed layer depth
+
+-   2025 shows spatially structured mixed-layer changes (CMEMS) around the Abrolhos rather than uniform shoaling. Where mixed layers are deeper or more variable, **heat is less likely to remain trapped in the surface skin layer** . This is consistent with wind/current-driven mixing and entrainment, and with the Capes Current acting as part of a broader shelf circulation/mixing system.
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-height: 9.5
+#| fig-width: 11
+
+
+cmems_mlots_delta <- cmems_2025_mlotst |>
+  tidy_monthly("mean") -
+  cmems_2011_mlotst |>
+  tidy_monthly("mean")
+
+cmems_mlots_plots <- make_delta_maps(
+  delta_r = cmems_mlots_delta,
+  plot_name = "p_cmems_mlots_delta",
+  fill_palette = "RdBu",
+  fill_name = "Δ Mixed lyr\ndepth",
+  title = "Δ mean monthly mixed layer thickness (m) (2025-2011)"
+)
+cmems_mlots_plots$combined
+
+```
+
+## Sea level height
+
+-   The Leeuwin Current is closely linked to coastal sea-level gradients; stronger Leeuwin transport tends to correspond with higher coastal sea level along WA. Mean sea-level height differences do not show a simple 2025 \> 2011 Leeuwin-like signal around the Abrolhos, but show spatial structuring between months.
+
+-   This supports the view that **2011 had stronger Leeuwin-style oceanic heat delivery** , while **2025 had more local circulation heterogeneity and less sustained warm advection** into the Abrolhos.
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-height: 9.5
+#| fig-width: 11
+
+
+sl_delta <- sla_2025 |>
+  tidy_monthly("mean") -
+  sla_2011 |>
+  tidy_monthly("mean")
+
+sl_plots <- make_delta_maps(
+  delta_r = sl_delta,
+  plot_name = "p_sl_delta",
+  fill_palette = "RdBu",
+  fill_name = "Δ Sea Level",
+  title = "Δ mean monthly sea level height (2025-2011)"
+)
+
+sl_plots$combined
+
+```
+
+## Wind patterns
+
+-   The Abrolhos sits inside a zone where **2025 wind vectors differ strongly from 2011**. The arrows over the Abrolhos region (BOM BARRA 2 wind model) show a more coherent wind field in 2025, with stronger directional structure than the broader regional plot suggests.
+
+-   Southerly / alongshore wind stress brings
+
+    -   → offshore Ekman transport
+    -   → coastal divergence
+    -   → uplift of cooler nutrient-rich subsurface water
+    -   → increased chlorophyll
+    -   → reduced SST persistence
+    -   → lower DHW
+
+-   Around the Abrolhos, 2025 has stronger or more organised winds in several months, particularly Jan, Mar, and May, while Feb appears anomalously warmer / higher wind-speed delta in the Abrolhos zoom. This matches the SST/DHW pattern: the Abrolhos is not uniformly cooler for all months, but the heat stress is less persistent than in 2011.
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-height: 9.5
+#| fig-width: 11
+
+
+wind_speed_2011 <- sqrt(u10_daily_2010_2011^2 + v10_daily_2010_2011^2)
+wind_speed_2025 <- sqrt(u10_daily_2024_2025^2 + v10_daily_2024_2025^2)
+
+names(wind_speed_2011) <- names(u10_daily_2010_2011)
+names(wind_speed_2025) <- names(u10_daily_2024_2025)
+
+wind_speed_delta <- wind_speed_2025 |>
+  tidy_monthly("mean") -
+  wind_speed_2011 |>
+  tidy_monthly("mean")
+
+wind_speed_delta_m <- wind_speed_delta |>
+  terra::subset(months_use)
+
+wind_u_2025_m <- u10_daily_2024_2025 |>
+  tidy_monthly("mean") |>
+  terra::subset(months_use)
+
+wind_v_2025_m <- v10_daily_2024_2025 |>
+  tidy_monthly("mean") |>
+  terra::subset(months_use)
+
+names(wind_speed_delta_m) <- months_use
+names(wind_u_2025_m) <- paste0("u_", months_use)
+names(wind_v_2025_m) <- paste0("v_", months_use)
+
+wind_arrow_df <- as.data.frame(c(wind_u_2025_m, wind_v_2025_m), xy = TRUE, cells = TRUE, na.rm = TRUE) |>
+  pivot_longer(
+    cols = -c(cell, x, y),
+    names_to = c(".value", "lyr"),
+    names_pattern = "([uv])_(.*)"
+  ) |>
+  mutate(
+    row = terra::rowFromCell(wind_u_2025_m[[1]], cell),
+    col = terra::colFromCell(wind_u_2025_m[[1]], cell)
+  ) |>
+  filter(
+    row %% 2 == 0,
+    col %% 2 == 0
+  ) |>
+  mutate(
+    wind_speed = sqrt(u^2 + v^2),
+    arrow_len = 0.10,
+    xend = x + arrow_len * u / wind_speed,
+    yend = y + arrow_len * v / wind_speed
+  ) |>
+  filter(is.finite(xend), is.finite(yend))
+
+wind_speed_delta_a <- crop(wind_speed_delta_m, abrovect_ext)
+wind_u_2025_a <- crop(wind_u_2025_m, abrovect_ext)
+wind_v_2025_a <- crop(wind_v_2025_m, abrovect_ext)
+
+wind_arrow_df_a <- as.data.frame(c(wind_u_2025_a, wind_v_2025_a), xy = TRUE, cells = TRUE, na.rm = TRUE) |>
+  pivot_longer(
+    cols = -c(cell, x, y),
+    names_to = c(".value", "lyr"),
+    names_pattern = "([uv])_(.*)"
+  ) |>
+  mutate(
+    row = terra::rowFromCell(wind_u_2025_a[[1]], cell),
+    col = terra::colFromCell(wind_u_2025_a[[1]], cell)
+  ) |>
+  filter(
+    row %% 1 == 0,
+    col %% 1 == 0
+  ) |>
+  mutate(
+    wind_speed = sqrt(u^2 + v^2),
+    arrow_len = 0.025,
+    xend = x + arrow_len * u / wind_speed,
+    yend = y + arrow_len * v / wind_speed
+  ) |>
+  filter(is.finite(xend), is.finite(yend))
+
+p_wind_delta <- ggplot() +
+  theme_bw(base_size = 9) +
+  geom_spatraster(data = wind_speed_delta_m) +
+  geom_segment(
+    data = wind_arrow_df,
+    aes(
+      x = x,
+      y = y,
+      xend = xend,
+      yend = yend
+    ),
+    arrow = arrow(length = unit(0.045, "cm")),
+    linewidth = 0.15,
+    alpha = 0.8
+  ) +
+  geom_spatvector(
+    data = abrovect_poly,
+    linewidth = 0.2,
+    colour = "red",
+    fill = NA
+  ) +
+  facet_wrap(~lyr, nrow = 1) +
+  scale_fill_distiller(
+    palette = "RdBu",
+    name = expression(Delta ~ "wind speed " * (m ~ s^-1)),
+    direction = -1
+  ) +
+  coord_sf(expand = FALSE) +
+  labs(
+    title = "Δ mean wind speed and direction BARRA2 (2025-2011)",
+    x = NULL,
+    y = NULL
+  ) +
+  theme(
+    panel.grid = element_blank(),
+    panel.spacing.x = unit(0.06, "lines"),
+    strip.background = element_rect(fill = "grey90", colour = "grey40"),
+    strip.text = element_text(face = "bold", size = 8),
+    axis.text = element_text(size = 7),
+    axis.ticks = element_line(linewidth = 0.2),
+    legend.position = "bottom",
+    legend.key.width = unit(1.2, "cm"),
+    legend.key.height = unit(0.18, "cm"),
+    legend.title = element_text(size = 8),
+    legend.text = element_text(size = 7),
+    plot.margin = margin(2, 2, 2, 2),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 6),
+    axis.text.y = element_text(size = 6)
+  )
+
+p_wind_delta_a <- ggplot() +
+  theme_bw(base_size = 9) +
+  geom_spatraster(data = wind_speed_delta_a) +
+  geom_segment(
+    data = wind_arrow_df_a,
+    aes(
+      x = x,
+      y = y,
+      xend = xend,
+      yend = yend
+    ),
+    arrow = arrow(length = unit(0.04, "cm")),
+    linewidth = 0.12,
+    alpha = 0.8
+  ) +
+  geom_spatvector(
+    data = abrovect,
+    linewidth = 0.01,
+    colour = "black",
+    fill = "beige"
+  ) +
+  facet_wrap(~lyr, nrow = 1) +
+  scale_fill_distiller(
+    palette = "RdBu",
+    name = expression(Delta ~ "wind speed " * (m ~ s^-1)),
+    direction = -1
+  ) +
+  coord_sf(expand = FALSE) +
+  labs(
+    title = "Δ mean wind speed and direction BARRA2 (2025-2011)",
+    x = NULL,
+    y = NULL
+  ) +
+  theme(
+    panel.grid = element_blank(),
+    panel.spacing.x = unit(0.06, "lines"),
+    strip.background = element_rect(fill = "grey90", colour = "grey40"),
+    strip.text = element_text(face = "bold", size = 8),
+    axis.text = element_text(size = 7),
+    axis.ticks = element_line(linewidth = 0.2),
+    legend.position = "bottom",
+    legend.key.width = unit(1.2, "cm"),
+    legend.key.height = unit(0.18, "cm"),
+    legend.title = element_text(size = 8),
+    legend.text = element_text(size = 7),
+    plot.margin = margin(2, 2, 2, 2),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 6),
+    axis.text.y = element_text(size = 6)
+  )
+
+p_wind_delta / p_wind_delta_a +
+  plot_layout(
+    heights = c(1, 1),
+    guides = "collect"
+  ) &
+  theme(
+    legend.position = "bottom"
+  )
+
+
+
+```
+
+-   The broader BARRA2 map shows a strong coastal wind anomaly band, but the Abrolhos zoom shows that the local wind field is relatively smooth and coherent across the island group. That matters because persistent, directionally consistent winds can drive **mixing and Ekman transport** even if the scalar wind-speed anomaly is not extreme.
+
+-   The wind data therefore support three linked processes:
+
+    -   More vertical mixing Stronger or more persistent winds deepen/mix the surface layer, reducing surface heat accumulation.
+    -   Upwelling-favourable shelf forcing Alongshore winds can promote offshore surface transport and replacement by cooler subsurface water.
+    -   Capes Current reinforcement Summer southerly wind stress can strengthen northward inner-shelf flow, increasing cool shelf-water influence near the Abrolhos.
+
+-   Elevated chlorophyll near the Abrolhos is consistent with wind-driven mixing/upwelling or shelf-water advection: the wind field provides the physical forcing, while chlorophyll is the biological tracer of that forcing.
+
+# Data sources:
+
+### NOAA Coral Reef Watch
+
+-   `CRW_DHW` Degree Heating Weeks
+-   `CRW_SST` - Sea Surface Temperature
+
+### Copernicus Marine
+
+-   **cmems_mod_glo_phy_my_0.083deg_P1D-m**
+    -   `thetao` - Sea water potential temperature (°C)
+    -   `mlotst` - Ocean mixed layer thickness (m)
+    -   `uo` - Eastward sea water velocity (m s⁻¹)
+    -   `vo` - Northward sea water velocity (m s⁻¹)
+    -   `so` - Sea water salinity (PSU / 10⁻³)
+    -   `zos` - Sea Surface Height above geoid (m)
+-   **cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D**
+    -   `Chl` chlorophyll
+
+### ERA5 reanalysis
+
+-   **derived-era5-single-levels-daily-statistics**
+
+    -   `surface_net_solar_radiation` - Surface net solar radiation, accumulated shortwave radiation at the surface (J m⁻²)
+    -   `surface_net_thermal_radiation` - Surface net thermal radiation, accumulated longwave radiation at the surface (J m⁻²)
+    -   `surface_latent_heat_flux` - Surface latent heat flux, accumulated turbulent heat exchange associated with evaporation/condensation (J m⁻²)
+    -   `surface_sensible_heat_flux` - Surface sensible heat flux, accumulated turbulent heat exchange associated with air–sea temperature differences (J m⁻²)
+
+### BOM Atmospheric high-resolution reanalysis (BARRA)
+
+-   **BARRA-R2/v1/1hr**
+    -   `u10` - Eastward wind speed (m s⁻¹)
+    -   `v10` - Northward wind speed (m s⁻¹)
+

@@ -1,0 +1,58 @@
+[
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "About this site"
+  },
+  {
+    "objectID": "abrolhos.html",
+    "href": "abrolhos.html",
+    "title": "Capes Current–mediated cooling of the Houtman Abrolhos during the 2025 Western Australian marine heatwave",
+    "section": "",
+    "text": "The 2025 Western Australian marine heatwave produced severe regional thermal stress, but accumulated heat exposure at the Houtman Abrolhos was substantially lower than during the 2011 event. We compared January–May anomalies in DHW, SST, CMEMS ocean temperature, mixed-layer depth, currents, chlorophyll, sea level, wind, and ERA5 surface heat-flux terms between 2025 and 2011 to identify the mechanisms underlying this local difference. The 2011 event is consistent with a Leeuwin Current-dominated heatwave, where enhanced poleward advection of warm tropical water produced persistent SST anomalies and high DHW. In contrast, the 2025 fields show a more spatially heterogeneous event around the Abrolhos, with reduced local DHW, cooler or mixed thetao, elevated chlorophyll, altered current structure, variable mixed-layer depth, and wind patterns consistent with enhanced mixing and upwelling-favourable shelf forcing. Together, these patterns support a stronger relative role of the Capes Current in 2025, with northward cool-shelf transport and associated upwelling or shelf exchange interrupting heat accumulation around the islands. Atmospheric forcing likely contributed through wind stress and turbulent exchange, but the dominant proximate mechanism appears oceanic: reduced persistence of Leeuwin Current heat delivery and increased local ventilation by Capes Current/upwelling processes. These results suggest that the Abrolhos response to regional heatwaves depends strongly on the dynamic balance between warm Leeuwin Current advection and cooler Capes Current–shelf-water influence, with the latter likely moderating 2025 heat stress."
+  },
+  {
+    "objectID": "abrolhos.html#ocean-advection",
+    "href": "abrolhos.html#ocean-advection",
+    "title": "Capes Current–mediated cooling of the Houtman Abrolhos during the 2025 Western Australian marine heatwave",
+    "section": "2.1 Ocean advection",
+    "text": "2.1 Ocean advection\n\n2011 event was strongly linked to enhanced Leeuwin Current transport during La Niña with high coastal sea level and warm tropical water advected southward due to anomalously strong Leeuwin Current flow and warm-water transport along the WA coastline.\n2025 event shows reduced Leeuwin Current transport Feb-March compared with 2011, with lower coastal sea level and reduced southwards advection of warm tropical water transport along the WA coastline.\n\n\n\n\n\n\n\n\n\n\n\nThe Capes Current is a cool, northward inner-shelf current that develops mainly in summer under southerly wind stress. It carries cooler, more productive upwelled water northward from the Cape Leeuwin–Cape Naturaliste region along the southwest WA shelf, opposing or undercutting the poleward Leeuwin Current influence. Woo and Pattiaratchi describe it as a wind-forced summer current carrying high-productivity upwelled water equatorward along the southwest coast\nThe Abrolhos 2025–2011 signal is consistent with stronger Capes/upwelling/shelf-current influence in 2025, especially relative to the 2011 Leeuwin Current heatwave.\nThe 2025–2011 differences around the Abrolhos are spatially structured rather than basin-uniform. Local differences in vectors around the Abrolhos suggest altered shelf exchange and reduced dominance of southward Leeuwin advection."
+  },
+  {
+    "objectID": "abrolhos.html#atmospheric-heat-fluxes",
+    "href": "abrolhos.html#atmospheric-heat-fluxes",
+    "title": "Capes Current–mediated cooling of the Houtman Abrolhos during the 2025 Western Australian marine heatwave",
+    "section": "2.2 Atmospheric heat fluxes",
+    "text": "2.2 Atmospheric heat fluxes\n\nIn 2011, unusually high air-sea heat gain (exceeding 50 W m⁻²) warmed the upper ocean, devastating local marine ecosystems.\nDifferences in surface latent heat flux and net solar radiation (ERA5) do not give a clean explanation for lower Abrolhos DHW in 2011. Atmospheric fields act as modulators of marine heatwaves, while ocean fields are the proximate driver of differences between the 2025 and 2011 heatwaves in the Abrolhos."
+  },
+  {
+    "objectID": "abrolhos.html#coastal-upwelling",
+    "href": "abrolhos.html#coastal-upwelling",
+    "title": "Capes Current–mediated cooling of the Houtman Abrolhos during the 2025 Western Australian marine heatwave",
+    "section": "2.3 Coastal upwelling",
+    "text": "2.3 Coastal upwelling\n\n2025 is locally more chlorophyll-rich than 2011 in several months, which fits a c ooler, nutrient-enriched shelf-water signal , not just reduced atmospheric heating.\nChlorophyll increase points toward nutrient supply and cool water, which is more naturally linked to upwelling, shelf mixing, eddy-shelf exchange, or Capes Current transport .\nNote differences in Δ Chl on the regional/local plots below as regional Chl includes coastal sources (large magnitude) and more minor localised upwelling"
+  },
+  {
+    "objectID": "abrolhos.html#mixed-layer-depth",
+    "href": "abrolhos.html#mixed-layer-depth",
+    "title": "Capes Current–mediated cooling of the Houtman Abrolhos during the 2025 Western Australian marine heatwave",
+    "section": "2.4 Mixed layer depth",
+    "text": "2.4 Mixed layer depth\n\n2025 shows spatially structured mixed-layer changes (CMEMS) around the Abrolhos rather than uniform shoaling. Where mixed layers are deeper or more variable, heat is less likely to remain trapped in the surface skin layer . This is consistent with wind/current-driven mixing and entrainment, and with the Capes Current acting as part of a broader shelf circulation/mixing system."
+  },
+  {
+    "objectID": "abrolhos.html#sea-level-height",
+    "href": "abrolhos.html#sea-level-height",
+    "title": "Capes Current–mediated cooling of the Houtman Abrolhos during the 2025 Western Australian marine heatwave",
+    "section": "2.5 Sea level height",
+    "text": "2.5 Sea level height\n\nThe Leeuwin Current is closely linked to coastal sea-level gradients; stronger Leeuwin transport tends to correspond with higher coastal sea level along WA. Mean sea-level height differences do not show a simple 2025 &gt; 2011 Leeuwin-like signal around the Abrolhos, but show spatial structuring between months.\nThis supports the view that 2011 had stronger Leeuwin-style oceanic heat delivery , while 2025 had more local circulation heterogeneity and less sustained warm advection into the Abrolhos."
+  },
+  {
+    "objectID": "abrolhos.html#wind-patterns",
+    "href": "abrolhos.html#wind-patterns",
+    "title": "Capes Current–mediated cooling of the Houtman Abrolhos during the 2025 Western Australian marine heatwave",
+    "section": "2.6 Wind patterns",
+    "text": "2.6 Wind patterns\n\nThe Abrolhos sits inside a zone where 2025 wind vectors differ strongly from 2011. The arrows over the Abrolhos region (BOM BARRA 2 wind model) show a more coherent wind field in 2025, with stronger directional structure than the broader regional plot suggests.\nSoutherly / alongshore wind stress brings\n\n→ offshore Ekman transport\n→ coastal divergence\n→ uplift of cooler nutrient-rich subsurface water\n→ increased chlorophyll\n→ reduced SST persistence\n→ lower DHW\n\nAround the Abrolhos, 2025 has stronger or more organised winds in several months, particularly Jan, Mar, and May, while Feb appears anomalously warmer / higher wind-speed delta in the Abrolhos zoom. This matches the SST/DHW pattern: the Abrolhos is not uniformly cooler for all months, but the heat stress is less persistent than in 2011.\n\n\n\n\n\n\n\n\n\n\n\nThe broader BARRA2 map shows a strong coastal wind anomaly band, but the Abrolhos zoom shows that the local wind field is relatively smooth and coherent across the island group. That matters because persistent, directionally consistent winds can drive mixing and Ekman transport even if the scalar wind-speed anomaly is not extreme.\nThe wind data therefore support three linked processes:\n\nMore vertical mixing Stronger or more persistent winds deepen/mix the surface layer, reducing surface heat accumulation.\nUpwelling-favourable shelf forcing Alongshore winds can promote offshore surface transport and replacement by cooler subsurface water.\nCapes Current reinforcement Summer southerly wind stress can strengthen northward inner-shelf flow, increasing cool shelf-water influence near the Abrolhos.\n\nElevated chlorophyll near the Abrolhos is consistent with wind-driven mixing/upwelling or shelf-water advection: the wind field provides the physical forcing, while chlorophyll is the biological tracer of that forcing."
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "hash": "6e60a7987666177f4be911d18bad3d76",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Western Australia marine heatwaves: 2011 vs 2025\"\nformat:\n  html:\n    embed-resources: true\n    code-fold: false\n    code-tools: false\n    toc: true\n    toc-depth: 3\neditor: visual\nexecute:\n  echo: false\n  warning: false\n  message: false\n---\n\n\n\n::: {.cell}\n::: {.cell-output-display}\n![](index_files/figure-html/unnamed-chunk-1-1.png){width=960}\n:::\n:::\n\n",
+    "supporting": [
+      "index_files"
+    ],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

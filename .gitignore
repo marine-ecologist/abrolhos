@@ -1,0 +1,22 @@
+allen/
+BARRA_R2_winds/
+chl_erddap/
+cmems/
+code/
+copernicus_chl/
+copernicus_sealevel/
+data/
+era5_env/
+ERA5_heatflux/
+ERA5_winds/
+monthly_products/
+NOAACRW/
+plots/
+pyERA5.py
+abrolhos.Rproj
+quarto2/
+.Rproj.user/
+
+# keep quarto
+!quarto/
+!quarto/**
